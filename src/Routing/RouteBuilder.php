@@ -487,21 +487,27 @@ final class RouteBuilder
                 ]);
             }
 
-            if (!class_exists($class)) {
-                throw new InvalidClassInRoutePayload($class, [
-                    'handlerWrapperClasses',
-                    'handlerWrapperClassesToMergeWithDefault',
-                ]);
-            }
+            self::validateHandlerWrapperClass($class, $parameters);
+        }
+    }
 
-            $reflectionClass = new \ReflectionClass($class);
-            if (!$reflectionClass->implementsInterface(HandlerWrapperInterface::class)) {
-                throw new ClassIsNoHandlerWrapper($class);
-            }
 
-            if (!$class::areParametersValid($parameters)) {
-                throw new InvalidParametersInRoutePayload($class);
-            }
+    private static function validateHandlerWrapperClass(string $class, array $parameters): void
+    {
+        if (!class_exists($class)) {
+            throw new InvalidClassInRoutePayload($class, [
+                'handlerWrapperClasses',
+                'handlerWrapperClassesToMergeWithDefault',
+            ]);
+        }
+
+        $reflectionClass = new \ReflectionClass($class);
+        if (!$reflectionClass->implementsInterface(HandlerWrapperInterface::class)) {
+            throw new ClassIsNoHandlerWrapper($class);
+        }
+
+        if (!$class::areParametersValid($parameters)) {
+            throw new InvalidParametersInRoutePayload($class);
         }
     }
 
