@@ -429,9 +429,7 @@ final class RouteBuilder
             throw new OnlyOverwriteOrMergeCanBeUsedInRoutePayload();
         }
 
-        $classesToValidate = $dtoValidatorClasses
-            ?? $dtoValidatorClassesToMergeWithDefault
-            ?? [];
+        $classesToValidate = self::getClassesToValidate($dtoValidatorClasses, $dtoValidatorClassesToMergeWithDefault);
 
         foreach ($classesToValidate as $class => $parameters) {
             if (!is_string($class)) {
@@ -441,21 +439,23 @@ final class RouteBuilder
                 ]);
             }
 
-            if (!class_exists($class)) {
-                throw new InvalidClassInRoutePayload($class, [
-                    'dtoValidatorClasses',
-                    'dtoValidatorClassesToMergeWithDefault',
-                ]);
-            }
+            self::validateDTOValidatorClass($class);
+            self::validateParameters($class, $parameters);
+        }
+    }
 
-            $reflectionClass = new \ReflectionClass($class);
-            if (!$reflectionClass->implementsInterface(DTOValidatorInterface::class)) {
-                throw new ClassIsNoDTOValidator($class);
-            }
+    private static function validateDTOValidatorClass(string $class): void
+    {
+        if (!class_exists($class)) {
+            throw new InvalidClassInRoutePayload($class, [
+                'dtoValidatorClasses',
+                'dtoValidatorClassesToMergeWithDefault',
+            ]);
+        }
 
-            if (!$class::areParametersValid($parameters)) {
-                throw new InvalidParametersInRoutePayload($class);
-            }
+        $reflectionClass = new \ReflectionClass($class);
+        if (!$reflectionClass->implementsInterface(DTOValidatorInterface::class)) {
+            throw new ClassIsNoDTOValidator($class);
         }
     }
 
@@ -475,9 +475,7 @@ final class RouteBuilder
             throw new OnlyOverwriteOrMergeCanBeUsedInRoutePayload();
         }
 
-        $classesToValidate = $handlerWrapperClasses
-            ?? $handlerWrapperClassesToMergeWithDefault
-            ?? [];
+        $classesToValidate = self::getClassesToValidate($handlerWrapperClasses, $handlerWrapperClassesToMergeWithDefault);
 
         foreach ($classesToValidate as $class => $parameters) {
             if (!is_string($class)) {
@@ -488,6 +486,7 @@ final class RouteBuilder
             }
 
             self::validateHandlerWrapperClass($class, $parameters);
+            self::validateParameters($class, $parameters);
         }
     }
 
@@ -505,7 +504,17 @@ final class RouteBuilder
         if (!$reflectionClass->implementsInterface(HandlerWrapperInterface::class)) {
             throw new ClassIsNoHandlerWrapper($class);
         }
+    }
 
+    private static function getClassesToValidate(
+        ?array $validatorClasses,
+        ?array $validatorClassesToMergeWithDefault,
+    ): array {
+        return $validatorClasses ?? $validatorClassesToMergeWithDefault ?? [];
+    }
+
+    private static function validateParameters(string $class, $parameters): void
+    {
         if (!$class::areParametersValid($parameters)) {
             throw new InvalidParametersInRoutePayload($class);
         }
